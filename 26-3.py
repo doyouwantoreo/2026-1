@@ -2,9 +2,9 @@ import streamlit as st
 import random
 
 # 1. 페이지 설정
-st.set_page_config(page_title="Personal Color Text Curator", page_icon="📝", layout="wide")
+st.set_page_config(page_title="16톤 랜덤 큐레이터", page_icon="🎲", layout="wide")
 
-# 2. 스타일 설정 (이미지 제외, 텍스트 가독성 중심)
+# 2. 스타일 설정
 st.markdown("""
     <style>
     .category-title {
@@ -12,8 +12,7 @@ st.markdown("""
         font-weight: 800;
         color: #ff4b4b;
         margin-bottom: 10px;
-        border-bottom: 2px solid #ff4b4b;
-        display: inline-block;
+        text-align: center;
     }
     .product-box {
         background-color: #ffffff;
@@ -22,110 +21,75 @@ st.markdown("""
         border: 2px solid #f0f2f6;
         box-shadow: 0px 4px 12px rgba(0,0,0,0.05);
         text-align: center;
-        margin-bottom: 20px;
-        min-height: 180px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
+        min-height: 150px;
     }
     .product-name {
-        font-size: 20px;
+        font-size: 19px;
         font-weight: bold;
         color: #222;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
     .product-tag {
-        font-size: 14px;
-        color: #666;
-        background-color: #f8f9fa;
-        padding: 5px 12px;
-        border-radius: 20px;
-        display: inline-block;
+        color: #ff4b4b;
+        font-weight: bold;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. 16톤 세부 구조
-tone_structure = {
-    "봄 (Spring)": ["봄 페일", "봄 라이트", "봄 브라이트", "봄 비비드"],
-    "여름 (Summer)": ["여름 페일", "여름 라이트", "여름 뮤트", "여름 그레이시"],
-    "가을 (Autumn)": ["가을 소프트", "가을 뮤트", "가을 딥", "가을 다크"],
-    "겨울 (Winter)": ["겨울 브라이트", "겨울 비비드", "겨울 딥", "겨울 다크"]
+# 3. 데이터베이스 (데이터를 많이 넣을수록 랜덤성이 커집니다)
+# 톤 구분을 '기본'으로 통합해서 테스트해볼 수 있게 양을 늘렸습니다.
+db = {
+    "palette": [
+        "클리오 프로 아이 팔레트 에어", "데이지크 섀도우 팔레트", "웨이크메이크 소프트 블러링", 
+        "3CE 멀티 아이 컬러", "에스쁘아 리얼 아이 팔레트", "페리페라 올테이크 무드",
+        "롬앤 베러 댄 팔레트", "딘토 단테 원바이원", "힌스 뉴 뎁스", "피버 누드 팔레트"
+    ],
+    "blusher": [
+        "롬앤 베러 댄 치크", "크리니크 치크 팝", "피 블러셔 멜로우", 
+        "나스 블러쉬", "무지개맨션 피팅 블러쉬", "데이지크 블렌딩 무드",
+        "릴리바이레드 러브빔", "어뮤즈 소프트 크림 치크", "글린트 하이라이터", "라카 러브 실크"
+    ],
+    "tint": [
+        "페리페라 잉크 무드 글로이", "롬앤 쥬시 래스팅", "입생로랑 캔디 글레이즈", 
+        "아워글래스 팬텀 볼륨", "무지개맨션 오브제 리퀴드", "헤라 센슈얼 파우더 매트",
+        "클리오 크리스탈 글램", "에스쁘아 꾸뛰르 립틴트", "데이지크 쥬시 듀이", "힌스 무드인핸서"
+    ]
 }
 
-# 4. 텍스트 기반 제품 데이터 풀 (사진 링크 제거)
-cosmetics_pool = {
-    "기본": {
-        "palette": [{"name": "에스쁘아 - 리얼 아이 팔레트", "tag": "데일리 음영의 정석"}],
-        "blusher": [{"name": "롬앤 - 베러 댄 치크", "tag": "뽀얀 수채화 발색"}],
-        "tint": [{"name": "페리페라 - 잉크 무드 글로이 틴트", "tag": "탱글한 유리알 광택"}]
-    },
-    "여름 라이트": {
-        "palette": [
-            {"name": "클리오 - 에어 섀도우 [라벤더 가든]", "tag": "맑은 보랏빛 음영"},
-            {"name": "데이지크 - 쿨 블렌딩", "tag": "시원한 쿨톤 베이스"}
-        ],
-        "blusher": [
-            {"name": "디올 - 로지 글로우 001", "tag": "화사한 쿨 핑크 치크"},
-            {"name": "롬앤 - 오디 밀크", "tag": "피부톤 보정 라벤더"}
-        ],
-        "tint": [
-            {"name": "입생로랑 - 캔디 글레이즈 11호", "tag": "청순한 루비 핑크"},
-            {"name": "롬앤 - 베어 베리 스무디", "tag": "생기 넘치는 베리 컬러"}
-        ]
-    },
-    "가을 딥": {
-        "palette": [
-            {"name": "에스쁘아 - 뎁스", "tag": "그윽한 딥 브라운"},
-            {"name": "3CE - 로우 누드", "tag": "분위기 있는 누드톤"}
-        ],
-        "blusher": [
-            {"name": "나스 - 타오스", "tag": "건강한 브릭 레드 치크"},
-            {"name": "맥 - 웜 소울", "tag": "은은한 골드 펄 베이지"}
-        ],
-        "tint": [
-            {"name": "맥 - 디보티드 투 칠리", "tag": "분위기 여신 브릭 레드"},
-            {"name": "헤라 - 팜파스", "tag": "부드러운 벨벳 오렌지"}
-        ]
-    }
-}
+# 4. 사이드바 및 상태 관리
+st.sidebar.title("🔍 톤 설정")
+season = st.sidebar.selectbox("계절", ["봄", "여름", "가을", "겨울"])
 
-# 5. 사이드바 제어
-st.sidebar.title("🔍 퍼스널 컬러 설정")
-selected_season = st.sidebar.selectbox("계절 선택", list(tone_structure.keys()))
-selected_detail = st.sidebar.radio("세부 타입 선택", tone_structure[selected_season])
+# 버튼을 누를 때마다 세션 상태에 랜덤 시드를 부여
+if st.sidebar.button("다른 조합 보기 🔄") or 'seed' not in st.session_state:
+    st.session_state.seed = random.randint(1, 1000)
 
-if st.sidebar.button("다른 추천 보기 🔄"):
-    st.rerun()
+# 고정된 랜덤 시드를 사용해 해당 세션 동안은 유지되다가 버튼 누르면 변경
+random.seed(st.session_state.seed)
 
-# 6. 결과 화면
-st.title(f"✨ {selected_detail}를 위한 추천 리스트")
-st.write("이미지 없이 텍스트로 깔끔하게 제품 정보만 확인하세요.")
-st.divider()
+# 5. 메인 화면
+st.title(f"✨ {season} 타입을 위한 무작위 추천")
+st.write("이미지 없이 텍스트로만 구성된 실시간 랜덤 리스트입니다.")
 
-# 데이터 랜덤 추출 로직
-pool = cosmetics_pool.get(selected_detail, cosmetics_pool["기본"])
-p = random.choice(pool["palette"])
-b = random.choice(pool["blusher"])
-t = random.choice(pool["tint"])
+# 데이터 추출 (중복 없이 셔플)
+p_pick = random.choice(db["palette"])
+b_pick = random.choice(db["blusher"])
+t_pick = random.choice(db["tint"])
 
 # 레이아웃 구성
 col1, col2, col3 = st.columns(3)
 
-items = [
-    ("👁️ EYE PALETTE", p, col1),
-    ("😊 BLUSHER", b, col2),
-    ("💄 TINT / LIP", t, col3)
-]
+with col1:
+    st.markdown('<div class="category-title">👁️ PALETTE</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="product-box"><div class="product-name">{p_pick}</div><div class="product-tag">#추천템1</div></div>', unsafe_allow_html=True)
 
-for title, item, col in items:
-    with col:
-        st.markdown(f'<div class="category-title">{title}</div>', unsafe_allow_html=True)
-        st.markdown(f"""
-            <div class="product-box">
-                <div class="product-name">{item['name']}</div>
-                <div><span class="product-tag">#{item['tag']}</span></div>
-            </div>
-        """, unsafe_allow_html=True)
+with col2:
+    st.markdown('<div class="category-title">😊 BLUSHER</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="product-box"><div class="product-name">{b_pick}</div><div class="product-tag">#추천템2</div></div>', unsafe_allow_html=True)
 
-st.info(f"💡 {selected_detail} 타입은 위 제품들의 색감을 참고하여 쇼핑해 보세요!")
+with col3:
+    st.markdown('<div class="category-title">💄 TINT</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="product-box"><div class="product-name">{t_pick}</div><div class="product-tag">#추천템3</div></div>', unsafe_allow_html=True)
+
+st.divider()
+st.caption(f"현재 조합 번호: {st.session_state.seed} (버튼을 누를 때마다 이 번호가 바뀌며 제품도 바뀝니다.)")
